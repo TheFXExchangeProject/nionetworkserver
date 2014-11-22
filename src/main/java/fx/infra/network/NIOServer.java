@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
  * 
  */
 public class NIOServer implements Runnable {
-    private static final Logger logger = LoggerFactory.getLogger(NIOServer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(NIOServer.class);
     private String host;
     private int portNum;
     private Selector selector;
@@ -41,13 +41,13 @@ public class NIOServer implements Runnable {
     private CountDownLatch stillRunningLatch = new CountDownLatch(1);
 
     public NIOServer(String host, int port, Worker worker) {
-        logger.info("Creating new NIOServer...");
+        LOGGER.info("Creating new NIOServer...");
         this.host = host;
         this.portNum = port;
         try {
             this.selector = initSelector();
         } catch (IOException e) {
-            logger.info("Failed to construct NIOServer: {}", e);
+            LOGGER.info("Failed to construct NIOServer: {}", e);
         }
         this.worker = worker;
         Thread workerThread = new Thread(this.worker);
@@ -63,7 +63,7 @@ public class NIOServer implements Runnable {
             this.selector.wakeup();
             stillRunningLatch.await();
         } catch (InterruptedException e) {
-            logger.info("interrupted while closing the NIOServer: {}", e);
+            LOGGER.info("interrupted while closing the NIOServer: {}", e);
         }
         if(this.selector.isOpen()) {
             this.selector.close();
@@ -75,7 +75,7 @@ public class NIOServer implements Runnable {
      * @return the Selector
      */
     private Selector initSelector() throws IOException {
-        logger.info("Initialising the Selector.");
+        LOGGER.info("Initialising the Selector.");
         Selector socketSelector = SelectorProvider.provider().openSelector();
 
         this.serverSockChannel = ServerSocketChannel.open();
@@ -142,7 +142,7 @@ public class NIOServer implements Runnable {
         try {
             numRead = socketChannel.read(this.readBuffer);
         } catch (IOException e) {
-            logger.info("Problem reading the key ({}), exception thrown: {}", key.toString(), e);
+            LOGGER.info("Problem reading the key ({}), exception thrown: {}", key.toString(), e);
             key.cancel();
             socketChannel.close();
             return;
@@ -159,13 +159,13 @@ public class NIOServer implements Runnable {
 
 
     public void run() {
-        logger.info("Starting up the NIOServer main run loop.");
+        LOGGER.info("Starting up the NIOServer main run loop.");
         try {
             while(this.keepRunning) {
                 eventLoopLogic();
             }
         } catch (NullPointerException e) {
-            logger.info("The selector was null! {}", e);
+            LOGGER.info("The selector was null! {}", e);
         } finally {
             stillRunningLatch.countDown();
         }
@@ -180,11 +180,14 @@ public class NIOServer implements Runnable {
         try {
             // Wait for an event on a registered channel
             processChanges();
-            if(this.selector == null) { throw new NullPointerException(); }
+            if(this.selector == null) { 
+                throw new NullPointerException(); 
+            }
+
             this.selector.select();
             processSelectionKeys();
         } catch (IOException e) {
-            logger.info("Exception thrown in main run loop: {}", e);
+            LOGGER.info("Exception thrown in main run loop: {}", e);
         }                
     }
 
@@ -216,7 +219,9 @@ public class NIOServer implements Runnable {
             SelectionKey key =  selectedKeys.next();
             selectedKeys.remove();
             
-            if(!key.isValid()) { continue; }
+            if(!key.isValid()) { 
+                continue;
+            }
             
             // Check what event is available and deal with it
             if(key.isAcceptable()) {

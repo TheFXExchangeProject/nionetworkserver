@@ -13,12 +13,20 @@ public class ChangeRequest {
         this.ops = ops;
     }
 
-    public int getOps() { return ops; }
+    public int getOps() { 
+        return ops;
+    }
 
-    public ChangeType getType() { return type; }
+    public ChangeType getType() { 
+        return type; 
+    }
 
-    public SocketChannel getSocket() { return socket; }
+    public SocketChannel getSocket() { 
+        return socket; 
+    }
 
-    public boolean isType(ChangeType ct) { return type == ct; }
+    public boolean isType(ChangeType ct) { 
+        return type == ct; 
+    }
 
 } 

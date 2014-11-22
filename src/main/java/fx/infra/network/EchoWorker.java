@@ -9,12 +9,11 @@ import org.slf4j.LoggerFactory;
 /**
  * Author: Stephen van Beek
  * Creation: 15 Nov 2014
- *
  * A simple echo class which takes in a message from the server and sends
  * it back to the client as is.
  */
 public class EchoWorker implements Runnable, Worker {
-    private static final Logger logger = LoggerFactory.getLogger(EchoWorker.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(EchoWorker.class);
     private static final int QUEUE_SIZE = 1000000;
     private BlockingQueue<ServerDataEvent> queue = new ArrayBlockingQueue<>(QUEUE_SIZE, false);
 
@@ -38,7 +37,7 @@ public class EchoWorker implements Runnable, Worker {
                 // Send data to server
                 dataEvent.sendToServer();
             } catch (InterruptedException e) {
-                logger.info("Interrupted while waiting on the queue {}", e);
+                LOGGER.info("Interrupted while waiting on the queue {}", e);
             }
         }
     }
