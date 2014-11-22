@@ -1,4 +1,4 @@
-package fx.infra.network;
+package fx.networking.nio;
 
 import java.io.IOException;
 import org.junit.BeforeClass;

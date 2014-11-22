@@ -1,4 +1,4 @@
-package fx.infra.network;
+package fx.networking.nio;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ArrayBlockingQueue;

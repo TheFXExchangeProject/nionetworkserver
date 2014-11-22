@@ -1,11 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>fx.infra.network</groupId>
-  <artifactId>nionetwork</artifactId>
+  <groupId>fx.networking.nio</groupId>
+  <artifactId>server</artifactId>
   <packaging>jar</packaging>
   <version>1.0-SNAPSHOT</version>
-  <name>nionetwork</name>
+  <name>nioserver</name>
   <url>http://maven.apache.org</url>
   <properties>
     <slf4j.version>1.6.4</slf4j.version>
