@@ -16,11 +16,11 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Author: Stephen van Beek
  * Creation date: 15 Nov 2014
+ * Last modified: 22 Nov 2014
  * Basic NIOServer to begin with. Currently, not particularly general with references to specific worker classes.
  * 
  */
@@ -29,25 +29,24 @@ public class NIOServer implements Runnable {
     private int portNum;
     private Selector selector;
     private ServerSocketChannel serverSockChannel;
-    private ByteBuffer readBuffer = ByteBuffer.allocate(8092);
-    private EchoWorker worker;
+    private int BUFFER_SIZE = 8092;
+    private ByteBuffer readBuffer = ByteBuffer.allocate(BUFFER_SIZE);
+    private Worker worker;
     private List<ChangeRequest> changeRequests = new LinkedList<ChangeRequest>();
     private Map<SocketChannel, List<ByteBuffer>> pendingData = new HashMap<>();
     private boolean keepRunning = true;
     private CountDownLatch stillRunningLatch = new CountDownLatch(1);
 
 
-
-    public NIOServer(String host, int port) {
+    public NIOServer(String host, int port, Worker worker) {
         this.host = host;
         this.portNum = port;
         try {
             this.selector = initSelector();
         } catch (IOException e) {
             e.printStackTrace();
-            System.exit(1);
         }
-        this.worker = new EchoWorker();
+        this.worker = worker;
         Thread workerThread = new Thread(this.worker);
         workerThread.start();
     }
@@ -96,7 +95,6 @@ public class NIOServer implements Runnable {
         
         // Accept the connection and make it non-blocking
         SocketChannel socketChannel = serverSocketChannel.accept();
-        Socket socket = socketChannel.socket();
         socketChannel.configureBlocking(false);
 
         // Register the new Socketchannel with our Selector, indicating
@@ -110,7 +108,7 @@ public class NIOServer implements Runnable {
      */
     public void send(SocketChannel socket, byte[] data) {
         synchronized (this.changeRequests) {
-            this.changeRequests.add(new ChangeRequest(socket, ChangeRequest.CHANGEOPS, SelectionKey.OP_WRITE));
+            this.changeRequests.add(new ChangeRequest(socket, ChangeType.CHANGEOPS, SelectionKey.OP_WRITE));
             synchronized(this.pendingData) {
                 List<ByteBuffer> queue = this.pendingData.get(socket);
                 if (queue == null) {
@@ -154,7 +152,7 @@ public class NIOServer implements Runnable {
         this.worker.processData(this, socketChannel, this.readBuffer.array(), numRead);
     }
 
-
+    // TODO: Tidy up the run() method to reduce complexity.
     public void run() {
         while(this.keepRunning) {
             try {
@@ -163,8 +161,7 @@ public class NIOServer implements Runnable {
                     Iterator<ChangeRequest> changes = this.changeRequests.iterator();
                     while (changes.hasNext()) {
                         ChangeRequest change = changes.next();
-                        switch(change.type) {
-                        case ChangeRequest.CHANGEOPS:
+                        if(change.type == ChangeType.CHANGEOPS) {
                             SelectionKey key = change.socket.keyFor(this.selector);
                             key.interestOps(change.ops);
                         }
@@ -202,12 +199,11 @@ public class NIOServer implements Runnable {
         stillRunningLatch.countDown();
     }
 
+
     public void write(SelectionKey key) throws IOException {
         SocketChannel socketChannel = (SocketChannel) key.channel();
-
         synchronized(this.pendingData) {
             List<ByteBuffer> queue = this.pendingData.get(socketChannel);
-
             // Write until there's no more data
             while(!queue.isEmpty()) {
                 ByteBuffer buf = queue.get(0);

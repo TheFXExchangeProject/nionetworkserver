@@ -29,7 +29,7 @@ public class NIOServerTest {
 
     @BeforeClass
     public static void setUp() {
-        nioServer = new NIOServer("localhost", portNum);
+        nioServer = new NIOServer("localhost", portNum, new EchoWorker());
         serverThread = new Thread(nioServer);
         serverThread.start();
     }
@@ -51,7 +51,6 @@ public class NIOServerTest {
         printWriter.println("Hello World!\n");
         printWriter.flush();
         String message = bufferReader.readLine();
-        System.out.printf("%s\n", message);
         while (message == null) {
             Thread.sleep(100);
             message = bufferReader.readLine();
@@ -87,15 +86,12 @@ public class NIOServerTest {
             pw.flush();
         }
 
-        System.out.printf("All messages were sent in %d ms.%n",(System.nanoTime() - startTime)/1000000);
         int count = 0;
         for (BufferedReader buf : buffReadList) {
             for (int i = 0; i < 1000; i++) {
                 buf.readLine();
             }
         }
-        System.out.printf("Seven million messages were received in %d ms.%n",(System.nanoTime() - startTime)/1000000);
-        
     }
 
 

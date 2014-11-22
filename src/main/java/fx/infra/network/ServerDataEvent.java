@@ -1,15 +1,28 @@
-
 package fx.infra.network;
 import java.nio.channels.SocketChannel;
 
+/**
+ * A ServerDataEvent is used to a worker with the information required for it to process 
+ * outgoing data.
+ */
 class ServerDataEvent {
-	public NIOServer server;
-	public SocketChannel socket;
-	public byte[] data;
-	
-	public ServerDataEvent(NIOServer server, SocketChannel socket, byte[] data) {
-		this.server = server;
-		this.socket = socket;
-		this.data = data;
-	}
+    private NIOServer server;
+    private SocketChannel socket;
+    private byte[] data;
+    
+    public ServerDataEvent(NIOServer server, SocketChannel socket, byte[] data) {
+        this.server = server;
+        this.socket = socket;
+        this.data = data;
+    }
+
+    /**
+     * Sends the data held by this event to the server listed.
+     * @throws InterruptedException when the server is interrupted
+     * while trying to send the data
+     */
+    public void sendToServer() throws InterruptedException {
+        server.send(socket, data);
+    }
+
 }

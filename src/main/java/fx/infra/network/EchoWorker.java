@@ -2,14 +2,9 @@
 //
 package fx.infra.network;
 
-import java.util.List;
-import java.util.LinkedList;
-import java.nio.channels.SocketChannel;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.nio.channels.SocketChannel;
 
 /**
  * Author: Stephen van Beek
@@ -18,10 +13,11 @@ import java.util.concurrent.atomic.AtomicLong;
  * A simple echo class which takes in a message from the server and sends
  * it back to the client as is.
  */
-public class EchoWorker implements Runnable {
-    private BlockingQueue<ServerDataEvent> queue = new ArrayBlockingQueue<>(1000000, false);
-    private AtomicLong atom = new AtomicLong(0);
+public class EchoWorker implements Runnable, Worker {
+    private int QUEUE_SIZE = 1000000;
+    private BlockingQueue<ServerDataEvent> queue = new ArrayBlockingQueue<>(QUEUE_SIZE, false);
 
+    @Override
     public void processData(NIOServer server, SocketChannel socket, byte[] data, int count) {
         byte[] dataCopy = new byte[count];
         System.arraycopy(data, 0, dataCopy, 0, count);
@@ -39,8 +35,9 @@ public class EchoWorker implements Runnable {
                 // Wait for data to become available
                 dataEvent = queue.take(); 
                 // Send data to server
-                dataEvent.server.send(dataEvent.socket, dataEvent.data);
+                dataEvent.sendToServer();
             } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
     }
