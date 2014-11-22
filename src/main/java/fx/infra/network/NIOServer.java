@@ -29,7 +29,7 @@ public class NIOServer implements Runnable {
     private int portNum;
     private Selector selector;
     private ServerSocketChannel serverSockChannel;
-    private int BUFFER_SIZE = 8092;
+    private static final int BUFFER_SIZE = 8092;
     private ByteBuffer readBuffer = ByteBuffer.allocate(BUFFER_SIZE);
     private Worker worker;
     private List<ChangeRequest> changeRequests = new LinkedList<ChangeRequest>();
