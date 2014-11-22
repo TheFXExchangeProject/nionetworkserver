@@ -38,7 +38,7 @@ public class EchoWorker implements Runnable, Worker {
                 // Send data to server
                 dataEvent.sendToServer();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                logger.info("Interrupted while waiting on the queue {}", e);
             }
         }
     }

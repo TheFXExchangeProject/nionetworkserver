@@ -7,6 +7,12 @@ public class ChangeRequest {
     private ChangeType type;
     private int ops;
     
+    public ChangeRequest(SocketChannel socket, ChangeType type, int ops) {
+        this.socket = socket;
+        this.type = type;
+        this.ops = ops;
+    }
+
     public int getOps() { return ops; }
 
     public ChangeType getType() { return type; }
@@ -15,9 +21,4 @@ public class ChangeRequest {
 
     public boolean isType(ChangeType ct) { return type == ct; }
 
-    public ChangeRequest(SocketChannel socket, ChangeType type, int ops) {
-        this.socket = socket;
-        this.type = type;
-        this.ops = ops;
-    }
 } 

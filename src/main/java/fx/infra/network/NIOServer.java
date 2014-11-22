@@ -63,7 +63,7 @@ public class NIOServer implements Runnable {
             this.selector.wakeup();
             stillRunningLatch.await();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            logger.info("interrupted while closing the NIOServer: {}", e);
         }
         if(this.selector.isOpen()) {
             this.selector.close();
@@ -142,6 +142,7 @@ public class NIOServer implements Runnable {
         try {
             numRead = socketChannel.read(this.readBuffer);
         } catch (IOException e) {
+            logger.info("Problem reading the key ({}), exception thrown: {}", key.toString(), e);
             key.cancel();
             socketChannel.close();
             return;
@@ -161,17 +162,7 @@ public class NIOServer implements Runnable {
         logger.info("Starting up the NIOServer main run loop.");
         try {
             while(this.keepRunning) {
-                try {
-                    // Wait for an event on a registered channel
-                    processChanges();
-                    if(this.selector == null) { throw new NullPointerException(); }
-                    
-                    this.selector.select();
-                    processSelectionKeys();
-                
-                } catch (IOException e) {
-                    logger.info("Exception thrown in main run loop: {}", e);
-                }                
+                eventLoopLogic();
             }
         } catch (NullPointerException e) {
             logger.info("The selector was null! {}", e);
@@ -180,7 +171,28 @@ public class NIOServer implements Runnable {
         }
     }
     
-    
+
+    /**
+     * The main event loop logic used to continuously check for incoming messages
+     * before passing them off to the server's Worker.
+     */
+    private void eventLoopLogic() {
+        try {
+            // Wait for an event on a registered channel
+            processChanges();
+            if(this.selector == null) { throw new NullPointerException(); }
+            this.selector.select();
+            processSelectionKeys();
+        } catch (IOException e) {
+            logger.info("Exception thrown in main run loop: {}", e);
+        }                
+    }
+
+
+    /**
+     * Loops throught the current change requests and passes the corresponding SelectionKeys
+     * to the selector.
+     */
     private void processChanges() {
         synchronized (this.changeRequests) {
             Iterator<ChangeRequest> changes = this.changeRequests.iterator();
@@ -195,6 +207,9 @@ public class NIOServer implements Runnable {
         }
     }
 
+    /**
+     * Loops throught the selected keys and processes each accordingly.
+     */
     private void processSelectionKeys() throws IOException {
         Iterator<SelectionKey> selectedKeys = this.selector.selectedKeys().iterator();
         while (selectedKeys.hasNext()) {
