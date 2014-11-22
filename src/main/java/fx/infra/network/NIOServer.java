@@ -16,6 +16,8 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Author: Stephen van Beek
@@ -25,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
  * 
  */
 public class NIOServer implements Runnable {
+    private static final Logger logger = LoggerFactory.getLogger(NIOServer.class);
     private String host;
     private int portNum;
     private Selector selector;
@@ -37,14 +40,14 @@ public class NIOServer implements Runnable {
     private boolean keepRunning = true;
     private CountDownLatch stillRunningLatch = new CountDownLatch(1);
 
-
     public NIOServer(String host, int port, Worker worker) {
+        logger.info("Creating new NIOServer...");
         this.host = host;
         this.portNum = port;
         try {
             this.selector = initSelector();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.info("Failed to construct NIOServer: {}", e);
         }
         this.worker = worker;
         Thread workerThread = new Thread(this.worker);
@@ -72,6 +75,7 @@ public class NIOServer implements Runnable {
      * @return the Selector
      */
     private Selector initSelector() throws IOException {
+        logger.info("Initialising the Selector.");
         Selector socketSelector = SelectorProvider.provider().openSelector();
 
         this.serverSockChannel = ServerSocketChannel.open();
@@ -152,54 +156,64 @@ public class NIOServer implements Runnable {
         this.worker.processData(this, socketChannel, this.readBuffer.array(), numRead);
     }
 
-    // TODO: Tidy up the run() method to reduce complexity.
+
     public void run() {
-        while(this.keepRunning) {
-            try {
-                // Wait for an event on a registered channel
-                synchronized (this.changeRequests) {
-                    Iterator<ChangeRequest> changes = this.changeRequests.iterator();
-                    while (changes.hasNext()) {
-                        ChangeRequest change = changes.next();
-                        if(change.type == ChangeType.CHANGEOPS) {
-                            SelectionKey key = change.socket.keyFor(this.selector);
-                            key.interestOps(change.ops);
-                        }
-                    }
-                    this.changeRequests.clear();
-                }
-                if(this.selector == null) {
-                    System.exit(1);
-                }
-                this.selector.select();
+        logger.info("Starting up the NIOServer main run loop.");
+        try {
+            while(this.keepRunning) {
+                try {
+                    // Wait for an event on a registered channel
+                    processChanges();
+                    if(this.selector == null) { throw new NullPointerException(); }
+                    
+                    this.selector.select();
+                    processSelectionKeys();
                 
-                // Iterate over set of keys for which event are available
-                Iterator<SelectionKey> selectedKeys = this.selector.selectedKeys().iterator();
-                while (selectedKeys.hasNext()) {
-                    SelectionKey key =  selectedKeys.next();
-                    selectedKeys.remove();
-                    
-                    if(!key.isValid()) {
-                        continue;
-                    }
-                    
-                    // Check what event is available and deal with it
-                    if(key.isAcceptable()) {
-                        this.accept(key);
-                    } else if(key.isReadable()) {
-                        this.read(key); 
-                    } else if(key.isWritable()) {
-                        this.write(key);
-                    }
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
+                } catch (IOException e) {
+                    logger.info("Exception thrown in main run loop: {}", e);
+                }                
             }
+        } catch (NullPointerException e) {
+            logger.info("The selector was null! {}", e);
+        } finally {
+            stillRunningLatch.countDown();
         }
-        stillRunningLatch.countDown();
+    }
+    
+    
+    private void processChanges() {
+        synchronized (this.changeRequests) {
+            Iterator<ChangeRequest> changes = this.changeRequests.iterator();
+            while (changes.hasNext()) {
+                ChangeRequest change = changes.next();
+                if(change.isType(ChangeType.CHANGEOPS)) {
+                    SelectionKey key = change.getSocket().keyFor(this.selector);
+                    key.interestOps(change.getOps());
+                }
+            }
+            this.changeRequests.clear();
+        }
     }
 
-
+    private void processSelectionKeys() throws IOException {
+        Iterator<SelectionKey> selectedKeys = this.selector.selectedKeys().iterator();
+        while (selectedKeys.hasNext()) {
+            SelectionKey key =  selectedKeys.next();
+            selectedKeys.remove();
+            
+            if(!key.isValid()) { continue; }
+            
+            // Check what event is available and deal with it
+            if(key.isAcceptable()) {
+                this.accept(key);
+            } else if(key.isReadable()) {
+                this.read(key); 
+            } else if(key.isWritable()) {
+                this.write(key);
+            }
+        }        
+    }
+    
     public void write(SelectionKey key) throws IOException {
         SocketChannel socketChannel = (SocketChannel) key.channel();
         synchronized(this.pendingData) {

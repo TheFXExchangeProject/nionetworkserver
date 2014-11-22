@@ -1,10 +1,10 @@
-
-//
 package fx.infra.network;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.nio.channels.SocketChannel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Author: Stephen van Beek
@@ -14,7 +14,8 @@ import java.nio.channels.SocketChannel;
  * it back to the client as is.
  */
 public class EchoWorker implements Runnable, Worker {
-    private int QUEUE_SIZE = 1000000;
+    private static final Logger logger = LoggerFactory.getLogger(EchoWorker.class);
+    private static final int QUEUE_SIZE = 1000000;
     private BlockingQueue<ServerDataEvent> queue = new ArrayBlockingQueue<>(QUEUE_SIZE, false);
 
     @Override
