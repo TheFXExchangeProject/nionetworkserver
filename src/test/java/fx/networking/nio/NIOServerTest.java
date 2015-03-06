@@ -101,9 +101,5 @@ public class NIOServerTest {
                 assertEquals("Hello", buf.readLine());
             }
         }
-
-        for (Socket socket : socketList) {
-            socket.close();
-        }
     }
 }

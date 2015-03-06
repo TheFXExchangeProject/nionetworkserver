@@ -178,11 +178,11 @@ public class NIOServer implements Runnable {
         this.readBuffer.clear();
 
         // Attempt to read off the channel
-        int numRead = 0;
+        int numRead;
         try {
             numRead = socketChannel.read(this.readBuffer);
         } catch (IOException e) {
-            LOGGER.info("Problem reading the key ({}), exception thrown: {}", key.toString(), e);
+            LOGGER.error("Problem reading the key ({}), exception thrown: {}", key, e);
             key.cancel();
             socketChannel.close();
             return;
