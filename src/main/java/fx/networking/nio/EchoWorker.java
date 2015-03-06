@@ -1,27 +1,27 @@
-
-//
-package fx.infra.network;
+package fx.networking.nio;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.nio.channels.SocketChannel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Author: Stephen van Beek
  * Creation: 15 Nov 2014
- *
  * A simple echo class which takes in a message from the server and sends
  * it back to the client as is.
  */
 public class EchoWorker implements Runnable, Worker {
-    private int QUEUE_SIZE = 1000000;
+    private static final Logger LOGGER = LoggerFactory.getLogger(EchoWorker.class);
+    private static final int QUEUE_SIZE = 1000000;
     private BlockingQueue<ServerDataEvent> queue = new ArrayBlockingQueue<>(QUEUE_SIZE, false);
 
     @Override
     public void processData(NIOServer server, SocketChannel socket, byte[] data, int count) {
         byte[] dataCopy = new byte[count];
         System.arraycopy(data, 0, dataCopy, 0, count);
-        queue.add(new ServerDataEvent(server, socket, data));
+        queue.add(new ServerDataEvent(server, socket, dataCopy));
     }
 
     /**
@@ -37,7 +37,7 @@ public class EchoWorker implements Runnable, Worker {
                 // Send data to server
                 dataEvent.sendToServer();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                LOGGER.info("Interrupted while waiting on the queue {}", e);
             }
         }
     }

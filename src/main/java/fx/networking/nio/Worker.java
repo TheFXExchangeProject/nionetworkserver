@@ -1,6 +1,4 @@
-
-//
-package fx.infra.network;
+package fx.networking.nio;
 
 import java.nio.channels.SocketChannel;
 

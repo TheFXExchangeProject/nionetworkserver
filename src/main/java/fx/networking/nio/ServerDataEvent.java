@@ -1,8 +1,8 @@
-package fx.infra.network;
+package fx.networking.nio;
 import java.nio.channels.SocketChannel;
 
 /**
- * A ServerDataEvent is used to a worker with the information required for it to process 
+ * A ServerDataEvent is used to provide a worker with the information required for it to process
  * outgoing data.
  */
 class ServerDataEvent {
