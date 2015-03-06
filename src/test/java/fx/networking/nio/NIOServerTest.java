@@ -1,17 +1,21 @@
 package fx.networking.nio;
 
 import java.io.IOException;
-import org.junit.BeforeClass;
+
+import org.junit.*;
+
 import java.net.UnknownHostException;
 import java.net.Socket;
-import org.junit.Test;
+
 import static org.junit.Assert.assertTrue;
-import org.junit.AfterClass;
+
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import org.junit.Assert;
+
 import java.io.BufferedReader;
+
 import static org.junit.Assert.assertEquals;
+
 import java.util.List;
 import java.util.ArrayList;
 
@@ -19,29 +23,35 @@ import java.util.ArrayList;
  * Author: S. van Beek
  * Creation date: 13 Nov 2014
  * Last Modified by:
- * Last Modified date: 
+ * Last Modified date:
  */
 
 public class NIOServerTest {
-    private static NIOServer nioServer;
-    private static int portNum = 10000;
-    private static Thread serverThread;
+    private NIOServer nioServer;
+    private Thread serverThread;
+    private int portNum;
 
-    @BeforeClass
-    public static void setUp() {
-        nioServer = new NIOServer("localhost", portNum, new EchoWorker());
+    @Before
+    public void setUp() {
+        nioServer = new NIOServer("localhost", new EchoWorker());
         serverThread = new Thread(nioServer);
         serverThread.start();
+        portNum = nioServer.getPortNum();
+    }
+
+    @After
+    public void tearDown() throws IOException {
+        nioServer.close();
     }
 
     @Test
     public void testConnectToServerSuccessfully() throws UnknownHostException, IOException {
         Socket newConnection = new Socket("localhost", portNum);
-        assertTrue("Assert that the socket registers a connection", 
-                   newConnection.isConnected());
-        
+        assertTrue("Assert that the socket registers a connection",
+                newConnection.isConnected());
+
     }
-    
+
 
     @Test
     public void testGetsEchoFromServer() throws Exception {
@@ -65,7 +75,7 @@ public class NIOServerTest {
         List<BufferedReader> buffReadList = new ArrayList<>(1000);
         List<PrintWriter> printList = new ArrayList<>(1000);
         // Connect 100 sockets to the server
-        for(int i = 0; i< 1000; i++) {
+        for (int i = 0; i < 1000; i++) {
             Socket newConnection = new Socket("localhost", portNum);
             socketList.add(newConnection);
             buffReadList.add(new BufferedReader(new InputStreamReader(newConnection.getInputStream())));
@@ -73,30 +83,27 @@ public class NIOServerTest {
             printList.add(printWriter);
         }
 
-        long startTime = System.nanoTime();
         // Send 1000 messages per socket connection
         for (PrintWriter pw : printList) {
-            for(int j = 0; j < 7000; j++) {
+            for (int j = 0; j < 7000; j++) {
                 pw.println("Hello");
-             }
+            }
         }
-        
+
         // Send 7000 messages at a time
         for (PrintWriter pw : printList) {
             pw.flush();
         }
 
-        int count = 0;
+
         for (BufferedReader buf : buffReadList) {
             for (int i = 0; i < 1000; i++) {
-                buf.readLine();
+                assertEquals("Hello", buf.readLine());
             }
         }
-    }
 
-
-    @AfterClass
-    public static void tearDown() throws IOException {
-        nioServer.close();
+        for (Socket socket : socketList) {
+            socket.close();
+        }
     }
 }
